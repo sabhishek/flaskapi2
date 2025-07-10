@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ name }}
+  labels:
+{% for key, value in labels.items() %}
+    {{ key }}: "{{ value }}"
+{% endfor %}
+  annotations:
+{% for key, value in annotations.items() %}
+    {{ key }}: "{{ value }}"
+{% endfor %}
+---
+{% if resource_quota %}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ name }}-quota
+  namespace: {{ name }}
+spec:
+  hard:
+{% for key, value in resource_quota.items() %}
+    {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+---
+{% if network_policies %}
+{% for policy in network_policies %}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ name }}-{{ policy.name }}
+  namespace: {{ name }}
+spec:
+  podSelector:
+{% if policy.pod_selector %}
+    matchLabels:
+{% for key, value in policy.pod_selector.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+{% else %}
+    {}
+{% endif %}
+  policyTypes:
+{% for type in policy.policy_types %}
+  - {{ type }}
+{% endfor %}
+{% if policy.ingress %}
+  ingress:
+{% for rule in policy.ingress %}
+  - from:
+    {% for from_rule in rule.from %}
+    - {{ from_rule | to_yaml | indent(6) }}
+    {% endfor %}
+    {% if rule.ports %}
+    ports:
+    {% for port in rule.ports %}
+    - {{ port | to_yaml | indent(6) }}
+    {% endfor %}
+    {% endif %}
+{% endfor %}
+{% endif %}
+{% if policy.egress %}
+  egress:
+{% for rule in policy.egress %}
+  - to:
+    {% for to_rule in rule.to %}
+    - {{ to_rule | to_yaml | indent(6) }}
+    {% endfor %}
+    {% if rule.ports %}
+    ports:
+    {% for port in rule.ports %}
+    - {{ port | to_yaml | indent(6) }}
+    {% endfor %}
+    {% endif %}
+{% endfor %}
+{% endif %}
+---
+{% endfor %}
+{% endif %}

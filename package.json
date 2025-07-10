@@ -1,0 +1,22 @@
+{
+  "name": "flask-gitops-api",
+  "version": "1.0.0",
+  "description": "Flask-based extensible API with OpenAPI spec for tenant-aware CRUD operations via GitOps",
+  "main": "app.py",
+  "scripts": {
+    "start": "python app.py",
+    "dev": "source venv/bin/activate && python app.py",
+    "test": "pytest tests/"
+  },
+  "keywords": [
+    "flask",
+    "gitops",
+    "argocd",
+    "kubernetes",
+    "crossplane",
+    "openapi",
+    "api"
+  ],
+  "author": "GitOps API",
+  "license": "MIT"
+}
