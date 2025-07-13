@@ -123,21 +123,56 @@ class JobManager:
     
     def _store_job(self, job_data: Dict):
         """Store job in database (production mode)"""
-        # Implementation for PostgreSQL storage
-        pass
-    
+        from core.database import db, Job  # local import to avoid circular deps
+        
+        job_row = Job(
+            job_id=job_data["job_id"],
+            tenant_id=job_data["tenant_id"],
+            job_type=job_data["job_type"],
+            cluster_id=job_data["cluster_id"],
+            resource_type=job_data["resource_type"],
+            resource_name=job_data["resource_name"],
+            operation=job_data["operation"],
+            spec=job_data["spec"],
+            status=job_data["status"],
+            logs=job_data["logs"],
+            metadata=job_data["metadata"],
+        )
+        
+        db.session.add(job_row)
+        db.session.commit()
+ 
     def _queue_job(self, job_id: str):
         """Queue job with Celery (production mode)"""
-        # Implementation for Celery task queuing
-        pass
+        try:
+            # Send task name registered in core.tasks
+            self.celery.send_task("core.tasks.process_job", args=[job_id])
+        except Exception as exc:
+            logger.exception("Failed to enqueue Celery job %s", job_id)
     
     def _get_job_from_db(self, job_id: str) -> Optional[Dict]:
         """Get job from database (production mode)"""
-        # Implementation for database retrieval
-        pass
+        from core.database import Job
+        from core.database import db
+        
+        job_row = Job.query.filter_by(job_id=job_id).first()
+        return job_row.to_dict() if job_row else None
     
     def _update_job_in_db(self, job_id: str, status: JobStatus, 
                          logs: List[str] = None, metadata: Dict = None):
         """Update job in database (production mode)"""
-        # Implementation for database update
-        pass
+        from core.database import db, Job
+        
+        job_row = Job.query.filter_by(job_id=job_id).first()
+        if not job_row:
+            logger.warning("Job %s not found in DB while updating", job_id)
+            return
+        
+        job_row.status = status.value
+        if logs:
+            job_row.logs = (job_row.logs or []) + logs
+        if metadata:
+            md = job_row.metadata or {}
+            md.update(metadata)
+            job_row.metadata = md
+        db.session.commit()
