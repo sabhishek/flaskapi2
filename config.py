@@ -4,44 +4,55 @@ from datetime import timedelta
 class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
+    
+    # Development mode - disables PostgreSQL dependencies
+    DEV_MODE = os.environ.get('DEV_MODE', 'false').lower() == 'true'
+    
+    # Database Configuration
+    if DEV_MODE:
+        SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    else:
+        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'postgresql://user:pass@localhost/gitops_api'
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # GitOps Configuration
-    GIT_REPO_URL = os.environ.get('GIT_REPO_URL') or 'https://github.com/your-org/infrastructure-manifests.git'
-    GIT_BRANCH = os.environ.get('GIT_BRANCH') or 'main'
+    # Redis Configuration for Celery (disabled in dev mode)
+    REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
+    CELERY_BROKER_URL = REDIS_URL
+    CELERY_RESULT_BACKEND = REDIS_URL
+    
+    # Git Repository Configuration
+    TEMPLATE_REPO_URL = os.environ.get('TEMPLATE_REPO_URL') or 'https://github.com/org/infra-templates.git'
+    TEMPLATE_REPO_BRANCH = os.environ.get('TEMPLATE_REPO_BRANCH') or 'main'
+    
+    # Git Authentication
     GIT_USERNAME = os.environ.get('GIT_USERNAME')
     GIT_PASSWORD = os.environ.get('GIT_PASSWORD')
     
-    # ArgoCD Configuration
-    ARGOCD_URL = os.environ.get('ARGOCD_URL') or 'https://argocd.example.com'
-    ARGOCD_USERNAME = os.environ.get('ARGOCD_USERNAME')
-    ARGOCD_PASSWORD = os.environ.get('ARGOCD_PASSWORD')
-    ARGOCD_TOKEN = os.environ.get('ARGOCD_TOKEN')
-    
-    # Template Configuration
-    TEMPLATES_DIR = os.environ.get('TEMPLATES_DIR') or 'templates'
-    MANIFESTS_DIR = os.environ.get('MANIFESTS_DIR') or 'manifests'
+    # Webhook Configuration
+    WEBHOOK_TIMEOUT = int(os.environ.get('WEBHOOK_TIMEOUT', '30'))
+    WEBHOOK_RETRIES = int(os.environ.get('WEBHOOK_RETRIES', '3'))
     
     # Tenant Configuration
     TENANT_HEADER = os.environ.get('TENANT_HEADER') or 'X-Tenant-ID'
+    CLUSTER_HEADER = os.environ.get('CLUSTER_HEADER') or 'X-Cluster-ID'
     REQUIRE_TENANT = os.environ.get('REQUIRE_TENANT', 'true').lower() == 'true'
 
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///dev.db'
+    DEV_MODE = True
 
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'postgresql://user:pass@localhost/proddb'
+    DEV_MODE = False
 
 class TestingConfig(Config):
     """Testing configuration"""
     TESTING = True
+    DEV_MODE = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
-    WTF_CSRF_ENABLED = False
 
 config = {
     'development': DevelopmentConfig,

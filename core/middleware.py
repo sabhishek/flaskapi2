@@ -32,7 +32,10 @@ def require_tenant(f):
         if not tenant_id:
             return jsonify({'error': 'Tenant ID is required'}), 400
         
+        cluster_id = get_cluster_id()
+        
         g.tenant_id = tenant_id
+        g.cluster_id = cluster_id
         return f(*args, **kwargs)
     return decorated_function
 
@@ -55,6 +58,29 @@ def get_tenant_id():
     
     return tenant_id
 
+def get_cluster_id():
+    """Extract cluster ID from request headers or JSON body"""
+    from flask import current_app
+    
+    cluster_header = current_app.config.get('CLUSTER_HEADER', 'X-Cluster-ID')
+    
+    # Try to get from headers first
+    cluster_id = request.headers.get(cluster_header)
+    
+    # If not in headers, try JSON body
+    if not cluster_id and request.is_json:
+        cluster_id = request.json.get('cluster_id')
+    
+    # Try query parameters as fallback
+    if not cluster_id:
+        cluster_id = request.args.get('cluster_id')
+    
+    return cluster_id
+
 def get_current_tenant():
     """Get current tenant from Flask's g object"""
     return getattr(g, 'tenant_id', None)
+
+def get_current_cluster():
+    """Get current cluster from Flask's g object"""
+    return getattr(g, 'cluster_id', None)

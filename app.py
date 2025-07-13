@@ -7,6 +7,7 @@ import os
 from config import Config
 from core.middleware import TenantMiddleware
 from core.database import db
+from core.job_manager import JobManager
 from api.resources import register_resources
 
 # Load environment variables
@@ -18,15 +19,20 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
     
     # Initialize extensions
-    db.init_app(app)
-    migrate = Migrate(app, db)
+    if not app.config.get('DEV_MODE'):
+        db.init_app(app)
+        migrate = Migrate(app, db)
+    
+    # Initialize job manager
+    job_manager = JobManager(app)
+    app.job_manager = job_manager
     
     # Initialize Flask-RESTX API
     api = Api(
         app,
-        version='1.0',
+        version='2.0',
         title='GitOps Infrastructure API',
-        description='Tenant-aware CRUD operations for infrastructure resources via GitOps',
+        description='Declarative infrastructure provisioning via Git with async job processing',
         doc='/docs/',
         prefix='/api/v1'
     )
