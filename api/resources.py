@@ -19,13 +19,14 @@ def register_resources(api):
     
     # Initialize managers
     config_manager = ResourceConfigManager()
+    config_manager.load_from_file('resource_configs.yaml')
     
     # Create namespace for each resource type
     for resource_type in config_manager.list_resource_types():
         ns = Namespace(
             resource_type,
             description=f'{resource_type.title()} resource operations',
-            path=f'/api/v1/{resource_type}'
+            path=f'/{resource_type}'
         )
         
         # Register CRUD endpoints for this resource type
@@ -36,7 +37,7 @@ def register_resources(api):
     status_ns = Namespace(
         'status',
         description='Job status operations',
-        path='/api/v1/status'
+        path='/status'
     )
     register_status_endpoints(status_ns, models)
     api.add_namespace(status_ns)
@@ -45,7 +46,7 @@ def register_resources(api):
     tenant_ns = Namespace(
         'tenant',
         description='Tenant operations',
-        path='/api/v1/tenant'
+        path='/tenant'
     )
     register_tenant_endpoints(tenant_ns, models)
     api.add_namespace(tenant_ns)

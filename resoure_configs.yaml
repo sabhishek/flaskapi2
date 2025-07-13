@@ -1,0 +1,42 @@
+resource_types:
+  namespace:
+    repo_url: https://github.com/sabhishek/ocp-resources-gitops.git
+    template_dir: namespaces/
+    cluster_aware: true
+    async_processing: true
+    webhook:
+      enabled: false
+      url: https://webhook.example.com/namespace
+      mode: single
+    flavors: ['small', 'medium', 'large', 'custom']
+  vm:
+    repo_url: https://github.com/org/vm-resources-gitops.git
+    template_dir: vms/
+    cluster_aware: false
+    async_processing: true
+    webhook:
+      enabled: true
+      url: https://webhook.example.com/vm
+      mode: single
+    flavors: ['small', 'medium', 'large', 'custom']
+  osimage:
+    repo_url: https://github.com/org/os-image-builds-gitops.git
+    template_dir: osimage/
+    cluster_aware: false
+    async_processing: true
+    webhook:
+      enabled: true
+      url: https://webhook.example.com/osimage
+      mode: staged
+    flavors: ['ubuntu-small', 'rhel-custom', 'custom']
+  misc:
+    repo_url: https://github.com/org/misc-infra-gitops.git
+    template_dir: misc/
+    cluster_aware: true
+    async_processing: true
+    webhook:
+      enabled: true
+      url: https://webhook.example.com/misc
+      mode: single
+    flavors: ['dns-record', 'certificate', 'secret', 'custom']
+
