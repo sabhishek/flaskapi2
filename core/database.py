@@ -72,7 +72,7 @@ class Job(BaseModel):
     spec = db.Column(db.JSON)
     status = db.Column(db.String(50), default="submitted")
     logs = db.Column(db.JSON, default=list)
-    metadata = db.Column(db.JSON, default=dict)
+    job_metadata = db.Column(db.JSON, default=dict)
 
     def __repr__(self):
         return f"<Job {self.job_id} ({self.status})>"
