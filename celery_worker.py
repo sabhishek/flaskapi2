@@ -26,6 +26,11 @@ class FlaskTask(celery.Task):
 # Tell Celery to use the custom Context Task base class.
 celery.Task = FlaskTask
 
+# Make sure tasks inside the `core` package (e.g. core.tasks) are discovered when the worker starts.
+celery.autodiscover_tasks(['core'])
+
+# Alternatively, an explicit import also works:
+# import core.tasks  # noqa: F401
 
 # Optional: import task modules here so Celery can discover them automatically.
 # from api import tasks  # noqa: E402,F401
