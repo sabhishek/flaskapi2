@@ -8,6 +8,8 @@ import git
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from flask import current_app as flask_app
+from types import SimpleNamespace
+from core.gitops import GitOpsManager
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +43,9 @@ def _render_manifest(job: "Job") -> tuple[str, str]:
     # Determine cluster-aware path from resource_configs.yaml
     # ------------------------------------------------------------------
 
-    config_path = Path(__file__).resolve().parent.parent / "resoure_configs.yaml"
+    config_path = Path(__file__).resolve().parent.parent / "resource_configs.yaml"
     if not config_path.exists():  # pragma: no cover
-        raise FileNotFoundError("resoure_configs.yaml not found for manifest rules")
+        raise FileNotFoundError("resource_configs.yaml not found for manifest rules")
 
     cfg = yaml.safe_load(config_path.read_text()) or {}
     resource_cfg: dict[str, Any] = cfg.get(job.resource_type, {})
@@ -112,10 +114,35 @@ def process_job(self, job_id: str) -> str:  # noqa: D401
     jm = JobManager(app=flask_app)
 
     try:
-        # TODO: actual processing. For now we mark it completed directly.
         jm.update_job_status(job_id, JobStatus.IN_PROGRESS)
-        # … real work would go here …
-        jm.update_job_status(job_id, JobStatus.COMPLETED)
+
+        # Retrieve job payload (dict) and convert to object for _render_manifest
+        job_data = jm.get_job_status(job_id)
+        if not job_data:
+            raise ValueError(f"Job {job_id} not found")
+        job_obj = SimpleNamespace(**job_data)
+
+        # Render manifest YAML
+        manifest_yaml, rel_path = _render_manifest(job_obj)
+
+        # Commit manifest to Git repository
+        gom = GitOpsManager()
+        commit_path = gom.deploy_manifest(
+            tenant_id=job_obj.tenant_id,
+            resource_type=job_obj.resource_type,
+            name=job_obj.resource_name,
+            manifest=manifest_yaml,
+        )
+
+        jm.update_job_status(
+            job_id,
+            JobStatus.COMPLETED,
+            logs=[
+                "Manifest rendered", 
+                f"Manifest committed to {commit_path}"
+            ],
+            metadata={"manifest_path": rel_path},
+        )
         logger.info("Job %s completed", job_id)
     except Exception as exc:  # pragma: no cover
         logger.exception("Job %s failed: %s", job_id, exc)
