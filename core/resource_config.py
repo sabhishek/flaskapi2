@@ -34,7 +34,7 @@ class ResourceConfigManager:
         default_configs = {
             'namespace': ResourceTypeConfig(
                 name='namespace',
-                repo_url='git@github.com:sabhishek/infra-templates.git',
+                repo_url='https://github.com/sabhishek/ocp-resources-gitops.git',
                 template_dir='namespaces/',
                 cluster_aware=True,
                 async_processing=True,

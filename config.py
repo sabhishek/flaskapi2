@@ -22,8 +22,8 @@ class Config:
     CELERY_RESULT_BACKEND = REDIS_URL
     
     # Git Repository Configuration
-    TEMPLATE_REPO_URL = os.environ.get('TEMPLATE_REPO_URL') or 'https://github.com/org/infra-templates.git'
-    TEMPLATE_REPO_BRANCH = os.environ.get('TEMPLATE_REPO_BRANCH') or 'main'
+    TEMPLATE_REPO_URL = os.environ.get('TEMPLATE_REPO_URL') or 'https://github.com/sabhishek/infra-templates.git'
+    TEMPLATE_REPO_BRANCH = os.environ.get('TEMPLATE_REPO_BRANCH') or 'master'
     
     # Git Authentication
     GIT_USERNAME = os.environ.get('GIT_USERNAME')
