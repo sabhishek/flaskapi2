@@ -88,3 +88,38 @@ def _render_manifest(job: "Job") -> tuple[str, str]:
     manifest_yaml = template.render(context)
 
     return manifest_yaml, manifest_rel_path
+
+
+# ----------------------------------------------------------------------------
+# Celery task entry-points
+# ----------------------------------------------------------------------------
+
+from celery_worker import celery  # import the shared Celery app
+
+
+@celery.task(name="core.tasks.process_job", bind=True)
+def process_job(self, job_id: str) -> str:  # noqa: D401
+    """Celery task that processes an async Job identified by *job_id*.
+
+    The heavy-lifting logic should live in :py:class:`core.job_manager.JobManager`.
+    Here we simply hand off to it so that the worker stays skinny.
+    """
+    logger.info("Celery worker picked up job %s", job_id)
+
+    # Import here to avoid circular dependencies at import-time.
+    from core.job_manager import JobManager, JobStatus  # local import
+
+    jm = JobManager(app=flask_app)
+
+    try:
+        # TODO: actual processing. For now we mark it completed directly.
+        jm.update_job_status(job_id, JobStatus.IN_PROGRESS)
+        # … real work would go here …
+        jm.update_job_status(job_id, JobStatus.COMPLETED)
+        logger.info("Job %s completed", job_id)
+    except Exception as exc:  # pragma: no cover
+        logger.exception("Job %s failed: %s", job_id, exc)
+        jm.update_job_status(job_id, JobStatus.FAILED, logs=[str(exc)])
+        raise self.retry(exc=exc, countdown=30, max_retries=3)
+
+    return job_id
